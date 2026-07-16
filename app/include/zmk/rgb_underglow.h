@@ -28,3 +28,6 @@ int zmk_rgb_underglow_change_brt(int direction);
 int zmk_rgb_underglow_change_spd(int direction);
 int zmk_rgb_underglow_set_hsb(struct zmk_led_hsb color);
 int zmk_rgb_underglow_status(void);
+int zmk_rgb_underglow_set_agent_pixel(uint8_t index, uint8_t r, uint8_t g, uint8_t b);
+int zmk_rgb_underglow_clear_agent_pixels(void);
+int zmk_rgb_underglow_agent_commit(void);

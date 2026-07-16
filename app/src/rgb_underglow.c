@@ -76,6 +76,8 @@ static const struct device *led_strip;
 
 static struct led_rgb pixels[STRIP_NUM_PIXELS];
 static struct led_rgb status_pixels[STRIP_NUM_PIXELS];
+static struct led_rgb agent_pixels[STRIP_NUM_PIXELS];
+static bool agent_overlay_active;
 
 static struct rgb_underglow_state state;
 
@@ -208,8 +210,8 @@ static void zmk_led_write_pixels(void) {
         blend = zmk_led_generate_status();
     }
 
-    // fast path: no status indicators, battery level OK
-    if (blend == 0 && bat0 >= 20) {
+    // fast path: no status indicators, no agent overlay, battery level OK
+    if (blend == 0 && bat0 >= 20 && !agent_overlay_active) {
         led_strip_update_rgb(led_strip, pixels, STRIP_NUM_PIXELS);
         return;
     }
@@ -253,6 +255,16 @@ static void zmk_led_write_pixels(void) {
             led_buffer[i].r = led_buffer[i].r >> 1;
             led_buffer[i].g = led_buffer[i].g >> 1;
             led_buffer[i].b = led_buffer[i].b >> 1;
+        }
+    }
+
+    // agent status overlay: non-black agent pixels override everything,
+    // including battery dimming, so status colors stay recognizable
+    if (agent_overlay_active) {
+        for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
+            if (agent_pixels[i].r || agent_pixels[i].g || agent_pixels[i].b) {
+                led_buffer[i] = agent_pixels[i];
+            }
         }
     }
 
@@ -547,7 +559,7 @@ void zmk_rgb_set_ext_power(void) {
         LOG_ERR("Unable to examine EXT_POWER: %d", c_power);
         c_power = 0;
     }
-    int desired_state = state.on || state.status_active;
+    int desired_state = state.on || state.status_active || agent_overlay_active;
 
 #if IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING)
     // force power off, when battery low (<10%)
@@ -657,6 +669,43 @@ static void zmk_led_write_pixels_work(struct k_work *work) {
     if (!state.status_active) {
         zmk_rgb_set_ext_power();
     }
+}
+
+static void agent_recompute_active(void) {
+    agent_overlay_active = false;
+    for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
+        if (agent_pixels[i].r || agent_pixels[i].g || agent_pixels[i].b) {
+            agent_overlay_active = true;
+            return;
+        }
+    }
+}
+
+int zmk_rgb_underglow_set_agent_pixel(uint8_t index, uint8_t r, uint8_t g, uint8_t b) {
+    if (!led_strip)
+        return -ENODEV;
+    if (index >= STRIP_NUM_PIXELS)
+        return -EINVAL;
+    agent_pixels[index] = (struct led_rgb){.r = r, .g = g, .b = b};
+    return 0;
+}
+
+int zmk_rgb_underglow_clear_agent_pixels(void) {
+    if (!led_strip)
+        return -ENODEV;
+    memset(agent_pixels, 0, sizeof(agent_pixels));
+    return 0;
+}
+
+int zmk_rgb_underglow_agent_commit(void) {
+    if (!led_strip)
+        return -ENODEV;
+    agent_recompute_active();
+    zmk_rgb_set_ext_power();
+    if (!k_work_is_pending(&underglow_write_work)) {
+        k_work_submit(&underglow_write_work);
+    }
+    return 0;
 }
 
 int zmk_rgb_underglow_status(void) {
