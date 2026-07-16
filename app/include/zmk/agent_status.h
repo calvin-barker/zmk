@@ -1,0 +1,10 @@
+#pragma once
+
+#define AGENT_PROTO_VERSION 0x01
+
+#define AGENT_CMD_SET_LEDS 0x01
+#define AGENT_CMD_HELLO 0x02
+#define AGENT_CMD_JUMP 0x10
+
+#define AGENT_SLOT_COUNT 10
+#define AGENT_USABLE_SLOTS 5
