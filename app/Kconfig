@@ -716,6 +716,40 @@ module = ZMK
 module-str = zmk
 source "subsys/logging/Kconfig.template.log_config"
 
+menu "Raw HID and agent status"
+
+config RAW_HID
+    bool "Enable Raw HID"
+    depends on !ZMK_SPLIT || ZMK_SPLIT_ROLE_CENTRAL
+    imply USB_DEVICE_HID
+
+config RAW_HID_USAGE_PAGE
+    hex "Raw HID Usage Page"
+    default 0xFF60
+
+config RAW_HID_USAGE
+    hex "Raw HID Usage"
+    default 0x61
+
+config RAW_HID_REPORT_SIZE
+    int "Raw HID Report Size"
+    default 32
+
+config RAW_HID_DEVICE
+    string "Raw HID Device"
+    default HID_1
+
+config ZMK_AGENT_STATUS
+    bool "Agent status LED overlay and jump behavior"
+    depends on RAW_HID && ZMK_RGB_UNDERGLOW
+
+config ZMK_AGENT_STATUS_LAYER
+    int "Keymap layer number that arms the agent jump keys"
+    depends on ZMK_AGENT_STATUS
+    default -1
+
+endmenu
+
 # This loads ZMK's internal board and shield Kconfigs
 rsource "boards/Kconfig"
 rsource "boards/shields/*/Kconfig.defconfig"
