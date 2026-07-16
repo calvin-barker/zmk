@@ -702,9 +702,10 @@ int zmk_rgb_underglow_agent_commit(void) {
         return -ENODEV;
     agent_recompute_active();
     zmk_rgb_set_ext_power();
-    if (!k_work_is_pending(&underglow_write_work)) {
-        k_work_submit(&underglow_write_work);
-    }
+    // Submit unconditionally: k_work_is_pending() is true while the handler is
+    // RUNNING, and this path is one-shot (no periodic repaint timer behind it),
+    // so a guarded submit can swallow the frame a host just sent.
+    k_work_submit(&underglow_write_work);
     return 0;
 }
 
