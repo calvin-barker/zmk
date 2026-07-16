@@ -1,0 +1,9 @@
+/ {
+    behaviors {
+        agent_jump: agent_jump {
+            compatible = "zmk,behavior-agent-jump";
+            #binding-cells = <1>;
+            display-name = "Agent Jump";
+        };
+    };
+};

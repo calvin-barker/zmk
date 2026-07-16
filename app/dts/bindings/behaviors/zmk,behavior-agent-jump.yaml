@@ -1,0 +1,5 @@
+description: Agent jump, sends a raw HID JUMP message for the slot in param1
+
+compatible: "zmk,behavior-agent-jump"
+
+include: one_param.yaml
